@@ -54,6 +54,9 @@ class generator:
     def __return_numeric__(self):
         return str(self.numeric_world)
 
+    def __getitem__(self, key):
+        return self.world[key]
+
     def generate(self):
         random.seed(self.seed)
         for i in range(self.world_size):
