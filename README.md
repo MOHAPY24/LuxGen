@@ -95,7 +95,7 @@ T T # ^ ~ * ~ ~ ~ ~
 ## 📦 Quickstart
 
 ```bash
-git clone https://github.com/yourname/luxgen
+git clone https://github.com/MOHAPY24/luxgen
 cd luxgen
 python3 luxgen.py
 ```
