@@ -7,13 +7,15 @@ with open("luxconf.json", "r") as f:
     data = json.loads(f.read())
     world_size = int(data["world_len"])
     seed = int(data["seed"])
-    max_objects = int(data["max_objects"])
+    if "max_objects" in data:
+        max_objects = int(data["max_objects"])
+    else:
+        max_objects = None
+    if "map_save" in data:
+        map_save = bool(data["map_save"])
+    else:
+        map_save = False
     
-
-
-world_list = []
-world_numeric = []
-materials_list = []
 
 
 class material:
@@ -37,7 +39,7 @@ class material:
 
 
 class generator:
-    def __init__(self, *args, materials:list, world:list, world_size:int=10, seed:int=123456, numeric_world:list, max_objects:int=None):
+    def __init__(self, *args, materials:list, world:list, world_size:int=world_size, seed:int=seed, numeric_world:list=[], max_objects:int=max_objects):
         self.valid_materials = materials
         self.world = world
         self.numeric_world = numeric_world
@@ -48,17 +50,19 @@ class generator:
     def __str__(self):
         return str(self.generate())
     
+    
     def __repr__(self):
         return self.__str__()
     
     def __return_numeric__(self):
         return str(self.numeric_world)
-
+    
     def __getitem__(self, key):
         return self.world[key]
 
     def generate(self):
         random.seed(self.seed)
+        water = False
         for i in range(self.world_size):
             if self.world_size < len(self.valid_materials):
                 raise ValueError("Too much objects in world")
@@ -67,30 +71,28 @@ class generator:
             if self.max_objects and len(self.valid_materials) > self.max_objects:
                 raise ValueError("Amount of objects exceeds max_object count")
             random_material = random.choices(self.valid_materials)
-            random_repr = str(random_material)[1]
+            if water != False:
+                random_repr = "#" # whatever symbol for water if you have one
+            else:
+                random_repr = str(random_material)[1]
+            if random_repr == "^": #whatever symbol for a cave if you have one
+                choice = random.randint(1, 5)
+                if choice == 5:
+                    continue
+                else:
+                    random_material = random.choices(self.valid_materials)
+                    random_repr = str(random_material)[1]
+            if random_repr == "#": # whatever symbol for water
+                if water == True:
+                    water = False
+                else:
+                    water = True
             self.world.append(random_repr)
             self.numeric_world.append(str(random_material)[12])
+        if map_save:
+            f = open("map.map", "w")
+            f.write(str(self.world).replace("[", '').replace(']', '').replace(',', '').replace("'", ''))
+            f.close()
         return self.world
+    
 
-
-
-
-
-
-
-if __name__ == "__main__":
-    materials_list.append(material("Moss", "1", "~"))
-    materials_list.append(material("Vine", "2", "_"))
-    materials_list.append(material("Water", "3", "#"))
-    materials_list.append(material("Tree", "4", "T"))
-    materials_list.append(material("Bolder", "5", "*"))
-    materials_list.append(material("Cave", "6", "^"))
-
-    gen1 = generator(materials=materials_list, world=world_list, world_size=world_size, seed=seed, numeric_world=world_numeric)
-    gen2 = generator(materials=materials_list, world=world_list, world_size=world_size, seed=seed, numeric_world=world_numeric) # remove if not making 2d map
-    map = [ # remove if not making 2d map
-        gen1, 
-        gen2
-    ]
-    print(str(map).replace("[", '').replace("]", '').replace("'", '').replace(",", '').strip()) # replace to print(str(gen1)) if not using 2d map
-    #print(gen1.__return_numeric__()) if you want numeric values of each object in the 1d map
