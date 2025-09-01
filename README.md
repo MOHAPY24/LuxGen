@@ -1,112 +1,228 @@
-# 🌲 LuxGen – Lightweight Procedural Map Generator
+ # LuxGen 🌌
 
-```
-        🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲
-      🌲🌲      L U X G E N      🌲🌲
-     🌲🌲🌲   Procedural Forest   🌲🌲🌲
-      🌲🌲     Worlds Await      🌲🌲
-        🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲
-```
-
-LuxGen is a **lightweight Python-based world/map generator** that builds procedural worlds with materials you define.
-It’s designed for **games, simulations, experiments, and creative coding**.
+LuxGen is a lightweight, procedural **map and world generator** written in Python.  
+It’s designed to be simple, configurable, and flexible, letting you generate endless ASCII or symbolic maps with your own set of materials.
 
 ---
 
-## ✨ Features
-
-* 📄 **Config-driven** → Easy to set world size, seed, and object limits via `luxconf.json`.
-* 🌍 **1D & 2D Maps** → Fully supports both 1D linear worlds *and* 2D layered maps (already working, see `map = [gen1, gen2]` in code).
-* 🧱 **Custom Materials** → Define your own tiles with names, numeric IDs, and symbols.
-* 🎲 **Seeded Randomness** → Reproducible maps every time with the same seed.
-* 🔢 **Dual Outputs** → Print **visual** maps (`T ~ #`) or **numeric** ones (`4 1 3`).
-* 🌿 **Biome System (coming soon)** → Group materials into biomes like forest, cave, desert.
-* 💧 **Detection System (coming soon)** → Detect water clusters to form lakes, ponds, rivers.
-* 💾 **Map Saving (coming soon)** → Save generated maps to `.map` files for reuse.
+## ✨ Key Features
+- **Customizable Materials**: Define your own objects (stone, water, grass, etc.) with symbolic and numeric representations.
+- **Deterministic Worlds**: Generation is based on a configurable seed, so worlds are reproducible.
+- **Dynamic World Rules**: Special conditions (like alternating water, rare caves, etc.) can be programmed directly in the generator.
+- **Export Option**: Save generated maps into `.map` files for sharing or post-processing.
+- **Numeric + Symbol Worlds**: Access both symbolic (`⬜`, `🌿`, `~`) and numeric representations of the same map.
 
 ---
 
-## ⚙️ Example `luxconf.json`
+## ⚙️ Installation
+
+
+Simply copy `luxgen.py` into your project.  
+Make sure you also create a `luxconf.json` file in the same directory (see below).
+
+---
+
+## 🔧 Configuration
+
+The generator reads configuration values from `luxconf.json`:
 
 ```json
 {
-  "world_len": 20,
-  "seed": 123456,
-  "max_objects": 50
+  "world_len": 50,
+  "seed": 12345,
+  "max_objects": 20,
+  "map_save": true
 }
-```
+````
+
+* `world_len` → Size of the world (number of tiles/slots to generate).
+* `seed` → Random seed (controls reproducibility).
+* `max_objects` → Maximum allowed unique materials. Prevents overpopulation of object types.
+* `map_save` → If true, the generated world is saved to a `map.map` file.
 
 ---
 
 ## 🧱 Defining Materials
 
+Materials are declared using the `material` class:
+
 ```python
-materials_list.append(material("Moss", 1, "~"))
-materials_list.append(material("Tree", 2, "T"))
-materials_list.append(material("Water", 3, "#"))
-materials_list.append(material("Cave", 4, "^"))
+from luxgen import material
+
+stone = material("Stone", 1, "⬜")
+water = material("Water", 2, "~")
+grass = material("Grass", 3, "🌿")
+```
+
+* `material_name`: Name of the object.
+* `material_numeric_value`: Numeric identifier (useful for algorithms).
+* `material_repr`: Symbol or character representing it in the world.
+
+---
+
+## 🌍 Generating a World
+
+```python
+from luxgen import generator, material
+
+stone = material("Stone", 1, "⬜")
+water = material("Water", 2, "~")
+grass = material("Grass", 3, "🌿")
+
+world = []
+gen = generator(materials=[stone, water, grass], world=world)
+
+print(gen.generate())
+```
+
+This produces a procedurally generated map, e.g.:
+
+```
+🌿 ⬜ ~ ~ 🌿 ~ ⬜ ⬜ 🌿 ⬜ 🌿 🌿 ⬜ ⬜ ~ 🌿 ~ 🌿 ⬜
 ```
 
 ---
 
-## 🚀 Example Output
+## 🛠 Adding Dynamic Materials
 
-### 1D World:
+LuxGen already includes **basic rules** for special materials inside `generator.generate()`:
 
-```
-T ~ # * ~ ^ ~ T ~ ~ * # T
+* **Water (`#`)**: Toggles between appearing and disappearing each time it is encountered.
+* **Caves (`^`)**: Appear only occasionally (1 in 5 chance).
+
+If you add new materials with **dynamic behavior** (like lava that spreads, forests that cluster, etc.),
+you’ll need to **edit the main `luxgen.py` file** inside the `generator.generate()` method.
+
+Example (inside `generate` function):
+
+```python
+if random_repr == "~":  # your symbol for water
+    if water is True:
+        water = False
+    else:
+        water = True
+
+if random_repr == "^":  # your symbol for caves
+    choice = random.randint(1, 5)
+    if choice != 5:
+        random_material = random.choices(self.valid_materials)
+        random_repr = str(random_material)[1]
 ```
 
-### Numeric View:
+To add your own rules:
 
-```
-2 1 3 5 1 4 1 2 1 1 5 3 2
-```
-
-### 2D World (already working in code):
-
-```
-T ~ # * ~ ^ ~ T ~ ~
-T T # ^ ~ * ~ ~ ~ ~
-```
+1. Assign a **unique symbol** for the material (e.g., `"🔥"` for lava).
+2. Add a condition inside `generate()` checking for that symbol.
+3. Define the behavior (e.g., skip, duplicate, cluster, toggle).
 
 ---
 
-## 🔧 Use Cases
+## 💡 Use Cases
 
-* 🎮 **Game Development** → Build maps for roguelikes, survival games, or text adventures.
-* 🧪 **Simulations** → Procedural environments for AI/pathfinding experiments.
-* 🏗 **Prototyping** → Test terrain generation ideas before building a bigger engine.
-* 🎲 **Random Worlds** → Generate endless landscapes with just a few materials.
+### 1. **Game Prototyping**
+
+Use LuxGen to rapidly prototype 2D maps for roguelikes, exploration games, or text-based adventures.
+
+Example:
+
+```python
+for row in range(10):  # print 10 rows of 50 tiles
+    print("".join(gen.generate()))
+```
+
+### 2. **Simulation / Modeling**
+
+Model resource distribution (water, trees, stone, etc.) for simple ecology or survival simulations.
+
+### 3. **Teaching Procedural Generation**
+
+LuxGen is simple enough for students to study how **seeds, randomness, and object placement rules** create complex worlds.
+
+### 4. **ASCII Art Worlds**
+
+Generate aesthetically pleasing ASCII landscapes for creative projects.
 
 ---
 
-## 🛠 Roadmap
+## 📦 Files in Project
 
-* ✅ **Basic 1D maps**
-* ✅ **2D map support** (already in place, just expand `map = [gen1, gen2]`)
-* 🔲 **Biome system** (forest, desert, cave, etc.)
-* 🔲 **Water/pond detection** → cluster water into lakes & rivers
-* 🔲 **.map export** → Save maps for external use
-* 🔲 **Noise-based generation** → More natural terrain flow
+* **`luxgen.py`** → Core generator logic.
+* **`luxconf.json`** → Config file with world parameters.
+* **`map.map`** → Output file (if saving enabled).
 
 ---
 
-## 📦 Quickstart
+## 📚 Guide: Adding New Dynamic Materials
 
-```bash
-git clone https://github.com/MOHAPY24/luxgen
-cd luxgen
-python3 luxgen.py
+Here’s how you can extend LuxGen with custom world rules.
+
+### Step 1: Define your material
+
+```python
+lava = material("Lava", 4, "🔥")
+```
+
+### Step 2: Add it to your generator
+
+```python
+gen = generator(materials=[stone, water, grass, lava], world=[])
+```
+
+### Step 3: Edit `luxgen.py` inside `generator.generate()`
+
+Add custom behavior:
+
+```python
+if random_repr == "🔥":  # lava behavior
+    # Lava spreads: if the previous tile was also lava, force this tile to lava too
+    if len(self.world) > 0 and self.world[-1] == "🔥":
+        random_repr = "🔥"
+```
+
+This ensures lava “flows” in clusters instead of being totally random.
+
+---
+
+## 🧪 Examples
+
+### Example 1: Water that expands
+
+```python
+if random_repr == "~":
+    if len(self.world) > 0 and self.world[-1] == "~":
+        # 70% chance the next tile is also water
+        if random.randint(1, 10) <= 7:
+            random_repr = "~"
+```
+
+### Example 2: Forests that clump
+
+```python
+if random_repr == "🌲":
+    # Trees have a 50% chance to appear next to other trees
+    if len(self.world) > 0 and self.world[-1] == "🌲":
+        if random.randint(0, 1) == 1:
+            random_repr = "🌲"
+```
+
+### Example 3: Rare treasure
+
+```python
+if random_repr == "💎":
+    # Treasure only appears once every 100 tiles
+    if random.randint(1, 100) != 1:
+        random_repr = str(random.choice(self.valid_materials))[1]
 ```
 
 ---
 
 ## 📜 License
 
-This project is licensed under the **GNU GPL 3.0 License**.
-You are free to run, study, share, and modify this software, but **derivatives must also be open-sourced** under the same license.
+Licensed under **GPL-3.0**.
+You are free to use, modify, and distribute LuxGen — just keep it open source.
 
 ---
 
-🌲 **LuxGen – Build infinite forests, caves, and worlds with just a few lines of Python.**
+> “Every world begins with a seed… what will yours grow into?”
+
+```
